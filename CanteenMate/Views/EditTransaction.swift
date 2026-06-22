@@ -4,31 +4,99 @@ import SwiftData
 struct EditTransactionView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var transaction: Transaction
-
+    
     @State private var showCancelAlert = false
     @State private var showMissingFieldsAlert = false
     @State private var showDeleteAlert = false
     @Environment(\.modelContext) private var context
-
+    
+    
+    
+    struct CancelDoneButtonView<Content: View>: View {
+        let content: () -> Content
+        let action: () -> Void
+        
+        var body: some View {
+            Button(action: action) {
+                content()
+            }
+        }
+    }
+    
     var body: some View {
         VStack {
             ZStack {
-                Color(.systemGray6)
+                Color(.white)
                     .ignoresSafeArea()
-
+                
                 VStack {
                     ScrollView {
                         VStack {
                             HStack {
                                 CancelDoneButtonView(
-                                    text: "Cancel",
+                                    content: {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 30, weight: .bold))
+                                            .foregroundColor(.black)
+                                    },
                                     action: {
                                         showCancelAlert = true
                                     }
+                                    
                                 )
+                                
                                 Spacer()
+                            }
+                            .padding(25)
+                            
+                            HStack {
+                                Text("Edit Transaction")
+                                    .font(.system(size: 26, weight: .bold))
+                                    .foregroundColor(.black)
+                                
+                                Spacer()
+                                
+                                Button(role: .destructive) {
+                                    showDeleteAlert = true
+                                } label: {
+                                    Text("Delete")
+                                        .font(.system(size:16, weight: .regular))
+                                        .foregroundColor(.red)
+                                }
+                            }
+                            .padding(.horizontal, 25)
+                            .padding(.bottom, 20)
+                            
+                            VStack(spacing: 12) {
+                                CustomTextFieldForTitle(label: "Title", text: $transaction.name)
+                                CustomTextFieldForAmount(
+                                    label: "Amount",
+                                    text: Binding(
+                                        get: { String(transaction.amount) },
+                                        set: { transaction.amount = Int($0) ?? 0 }
+                                    )
+                                )
+                                CustomTextFieldForDesc(label: "Description", text: Binding(
+                                    get: { transaction.desc ?? "" },
+                                    set: { transaction.desc = $0.isEmpty ? nil : $0 }
+                                ))
+                                CustomTextFieldForQuantity(
+                                    label: "Quantity",
+                                    text: Binding(
+                                        get: { String(transaction.count) },
+                                        set: { transaction.count = Int($0) ?? 0 }
+                                    )
+                                )
+                                
                                 CancelDoneButtonView(
-                                    text: "Done",
+                                    content: {
+                                        Text("Save")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .frame(width: 333, height: 45)
+                                            .background(Color.black)
+                                            .foregroundColor(.white)
+                                            .cornerRadius(8)
+                                    },
                                     action: {
                                         if transaction.name.isEmpty || transaction.amount <= 0 {
                                             showMissingFieldsAlert = true
@@ -36,33 +104,9 @@ struct EditTransactionView: View {
                                             dismiss()
                                         }
                                     }
+                                    
                                 )
-                            }
-                            .padding(20)
-
-                            IncomeExpenseButtonView(isIncomeMode: Binding(
-                                get: { transaction.type == .income },
-                                set: { transaction.type = $0 ? .income : .expense }
-                            ))
-
-                            VStack(spacing: 12) {
-                                CustomTextFieldForDate(label: "Date", selectedDate: $transaction.date)
-                                CustomTextFieldForString(label: "Title", text: $transaction.name)
-                                CustomTextFieldForInt(label: "Amount", text: $transaction.amount)
-                                CustomTextFieldForString(label: "Description", text: Binding(
-                                    get: { transaction.desc ?? "" },
-                                    set: { transaction.desc = $0.isEmpty ? nil : $0 }
-                                ))
-                                CustomTextFieldForInt(label: "Quantity", text: $transaction.count)
-                                Button(role: .destructive) {
-                                    showDeleteAlert = true
-                                } label: {
-                                    Text("Delete Transaction")
-                                        .frame(maxWidth: .infinity)
-                                }
-                                .padding()
-                                .background(Color.white)
-                                .cornerRadius(12)
+                                .padding(.top, 32)
                             }
                             .padding()
                         }
@@ -95,3 +139,21 @@ struct EditTransactionView: View {
         }
     }
 }
+
+#Preview {
+    let container = try! ModelContainer(for: Transaction.self)
+    
+    let sample = Transaction(
+        name: "Sample",
+        date: Date(),
+        amount: 10000,
+        type: .expense,
+        count: 1,
+        desc: "Preview transaction"
+    )
+    
+    EditTransactionView(transaction: sample)
+        .modelContainer(container)
+}
+
+

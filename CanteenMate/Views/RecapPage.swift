@@ -12,36 +12,62 @@ struct RecapPage: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Button(action: { isMonthly = false }) {
-                        Text("Daily")
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 7)
-                            .background(isMonthly ? Color.gray.opacity(0.2) : Color.accentColor)
-                            .foregroundColor(isMonthly ? .primary : .white)
-                            .cornerRadius(8)
+            VStack(alignment: .leading, spacing: 35) {
+                HStack(spacing: 6) {
+                    Spacer()
+                    // MARK: - Segmented Capsule Toggle
+                    ZStack {
+                        // Background abu-abu untuk toggle
+                        Capsule()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 145, height: 26)
+                        
+                        // Capsule putih yang bergerak (menu/custom)
+                        HStack {
+                            if isMonthly { Spacer() }
+                            
+                            Capsule()
+                                .fill(Color.white)
+                                .shadow(radius: 1)
+                                .frame(width: 72.5, height: 26)
+                            
+                            if !isMonthly { Spacer() }
+                        }
+                        .frame(width: 145)
+                        .animation(.easeInOut(duration: 0.2), value: isMonthly)
+                        
+                        // Tombol teks
+                        HStack(spacing: 0) {
+                            Button(action: {
+                                withAnimation { isMonthly = false }
+                            }) {
+                                Text("Daily")
+                                    .frame(width: 72.5, height: 26)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(isMonthly ? .gray : .black)
+                            }
+                            
+                            Button(action: {
+                                withAnimation { isMonthly = true }
+                            }) {
+                                Text("Monthly")
+                                    .frame(width: 72.5, height: 26)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(isMonthly ? .black : .gray)
+                            }
+                        }
                     }
-                    .padding(.leading, 18)
-
-                    Button(action: { isMonthly = true }) {
-                        Text("Monthly")
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(isMonthly ? Color.accentColor : Color.gray.opacity(0.2))
-                            .foregroundColor(isMonthly ? .white : .primary)
-                            .cornerRadius(8)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.black, lineWidth: 1))
+                    
+                    if !isMonthly {
+                        DailyPickerView(selectedDate: $selectedDate)
+                    } else {
+                        YearMonthPickerView(selectedDate: $selectedDate)
+                            .padding(.leading, 18)
                     }
-                }
-
-                if !isMonthly {
-                    DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                        .datePickerStyle(.compact)
-                        .labelsHidden()
-                        .padding(.horizontal)
-                } else {
-                    YearMonthPickerView(selectedDate: $selectedDate)
-                        .padding(.leading, 18)
+                    
+                    Spacer()
                 }
 
                 ZStack {
@@ -60,7 +86,7 @@ struct RecapPage: View {
                         .offset(y: -60)
                         .background(
                             Color(UIColor { trait in
-                                trait.userInterfaceStyle == .dark ? .black : .systemGray6
+                                trait.userInterfaceStyle == .dark ? .black : .white
                             })
                         )
                     }
@@ -69,7 +95,7 @@ struct RecapPage: View {
             }
             .background(
                 Color(UIColor { trait in
-                    trait.userInterfaceStyle == .dark ? .black : .systemGray6
+                    trait.userInterfaceStyle == .dark ? .black : .white
                 })
             )
             .sheet(isPresented: $isShowingTransactionModal) {
@@ -81,20 +107,11 @@ struct RecapPage: View {
                         .font(.title)
                         .fontWeight(.bold)
                 }
-            
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        isShowingTransactionModal = true
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.title2)
-                    }
-                }
             }
         }
         .background(
             Color(UIColor { trait in
-                trait.userInterfaceStyle == .dark ? .black : .systemGray6
+                trait.userInterfaceStyle == .dark ? .black : .white
             })
         )
     }

@@ -6,7 +6,6 @@ struct DailyTransaction: View {
     let selectedDate: Date
     
     @State private var selectedTransaction: Transaction?
-    @State private var isEditing = false
     
     private var startOfDay: Date {
         Calendar.current.startOfDay(for: selectedDate)
@@ -17,61 +16,119 @@ struct DailyTransaction: View {
     }
     
     @Query private var allTransactions: [Transaction]
+    
     private var filteredTransactions: [Transaction] {
-        allTransactions.filter { tx in
-            tx.date >= startOfDay && tx.date <= endOfDay
-        }
+        allTransactions
+            .filter { tx in tx.date >= startOfDay && tx.date <= endOfDay }
     }
     
+    private var groupedTransactions: [(key: String, value: [Transaction])] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH.mm"
+        
+        let grouped = Dictionary(grouping: filteredTransactions) { tx in
+            formatter.string(from: tx.date)
+        }
+        
+        return grouped
+            .sorted { $0.key > $1.key } // sort dari jam terbaru ke terlama
+    }
+
     var body: some View {
-        ZStack{
-            VStack(spacing: 0){
+        ZStack {
+            VStack(spacing: 0) {
                 if !isEmpty {
-                    HStack(spacing: 16) {
-                        SummaryCard(title: "Income", amount: filteredTransactions.filter{$0.type == .income}.reduce(0){$0 + $1.amount}, color: Color.green, imageName: "chart.line.uptrend.xyaxis")
-                        SummaryCard(title: "Expenses", amount: filteredTransactions.filter{$0.type == .expense}.reduce(0){$0 + $1.amount}, color: Color.red, imageName: "chart.line.downtrend.xyaxis")
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-                    .zIndex(1)
                     
-                    List(filteredTransactions) { transaction in
-                        HStack {
-                            Text(transaction.date, style: .time)
-                                .fontWeight(.bold)
-                                .padding(.trailing)
-                            VStack(alignment: .leading) {
-                                Text("\(transaction.name)")
-                                Text("Quantity: \(transaction.count)")
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                            }
-                            Spacer()
-                            Text("Rp\(transaction.amount)")
-                                .fontWeight(.bold)
-                                .foregroundColor(transaction.type == .expense ? .red : .green)
-                        }
-                        .padding(.vertical, 8)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            selectedTransaction = transaction
-                            isEditing = true
+                    let incomeTotal = filteredTransactions.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+                    let expenseTotal = filteredTransactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+                    let netAmount = incomeTotal - expenseTotal
+                    
+                    VStack(spacing: 12) {
+                        Text("Net Total")
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+
+                        SummaryCard(amount: netAmount, type: .net, fontSize: 36)
+
+                        HStack(spacing: 12) {
+                            SummaryCard(amount: incomeTotal, type: .income, fontSize: 20)
+
+                            Divider()
+                                .frame(width: 1, height: 20)
+                                .background(Color.gray)
+
+                            SummaryCard(amount: expenseTotal, type: .expense, fontSize: 20)
                         }
                     }
-                    .padding(.top, -25)
+
+                    // List
+                    List {
+                        ForEach(groupedTransactions, id: \.key) { time, transactionsAtTime in
+                            Section(
+                                header:
+                                    VStack(spacing: 4) {
+                                        HStack {
+                                            Text(time)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.black)
+                                            
+                                            Spacer()
+                                            
+                                            let totalAmount = transactionsAtTime.reduce(0) { $0 + $1.amount }
+                                            Text("\(totalAmount.formattedWithSeparator())")
+                                                .font(.subheadline)
+                                                .foregroundColor(.gray)
+                                        }
+                                        Rectangle()
+                                            .frame(height: 1)
+                                            .foregroundColor(.black)
+                                            .padding(.top, -4)
+                                    }
+                            ) {
+                                ForEach(transactionsAtTime) { tx in
+                                    HStack(spacing: 0) {
+                                        Image("icon_food")
+                                            .resizable()
+                                            .scaledToFit()
+                                            .foregroundColor(.white)
+                                            .frame(width: 25, height: 25)
+                                            .padding(8)
+                                            .background(Color(hex: "#4592AF"))
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .frame(width: 35, height: 35)
+                                            .padding(.trailing, 12)
+
+                                        VStack(alignment: .leading) {
+                                            Text(tx.name)
+                                            Text("\((tx.amount / tx.count).formattedWithSeparator()) x \(tx.count)")
+                                                .font(.caption)
+                                                .foregroundColor(.gray)
+                                        }
+
+                                        Spacer()
+
+                                        Text("\(tx.amount.formattedWithSeparator())")
+                                            .fontWeight(.bold)
+                                            .foregroundColor(tx.type == .expense ? .red : .green)
+                                    }
+                                    .contentShape(Rectangle()) // agar bisa ditekan
+                                    .onTapGesture {
+                                        selectedTransaction = tx
+                                    }
+                                    .listRowSeparator(.hidden)
+                                }
+                            }
+                        }
+                    }
+                    .listStyle(.plain)
+                    .padding(.horizontal, 20)
                     .sheet(item: $selectedTransaction) { transaction in
                         EditTransactionView(transaction: transaction)
                     }
                 }
-                
-                
             }
         }
-        .background(
-            Color(UIColor { trait in
-                trait.userInterfaceStyle == .dark ? .black : .systemGray6
-            })
-        )
+        .background(Color.white)
         .onAppear {
             isEmpty = filteredTransactions.isEmpty
         }
@@ -79,27 +136,27 @@ struct DailyTransaction: View {
             isEmpty = filteredTransactions.isEmpty
         }
         .onChange(of: selectedDate) {
-            print("selectedDate: \(selectedDate)")
             isEmpty = filteredTransactions.isEmpty
         }
     }
 }
 
+
+
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let modelContainer = try! ModelContainer(for: Transaction.self, configurations: config)
-
-    let context = modelContainer.mainContext
+    let container = try! ModelContainer(for: Transaction.self, configurations: config)
+    let context = container.mainContext
     let now = Date()
-
+    
     let dummyData = [
-        Transaction(name: "Lunch", date: now, amount: 25000, type: .expense, count: 1),
-        Transaction(name: "Coffee", date: now, amount: 15000, type: .expense, count: 1),
-        Transaction(name: "Freelance", date: now, amount: 100000, type: .income, count: 1),
+        Transaction(name: "Mie Ayam Spesial", date: now, amount: 45000, type: .expense, count: 3),
+        Transaction(name: "Es Teh Manis", date: now, amount: 15000, type: .expense, count: 3),
+        Transaction(name: "Mendoan", date: now, amount: 6000, type: .expense, count: 3),
     ]
-
+    
     dummyData.forEach { context.insert($0) }
-
+    
     return DailyTransaction(isEmpty: .constant(false), selectedDate: now)
-        .modelContainer(modelContainer)
+        .modelContainer(container)
 }

@@ -12,7 +12,7 @@ struct IncomeModeCustomView: View {
     @Binding var isCustomMode: Bool
     @Binding var isIncomeMode: Bool
     @State private var selectedDate: Date = Date()
-    @State private var amount: Int = 0
+    @State private var amount: String = ""
     @State private var title: String = ""
     @State private var description: String = ""
     @Environment(\.modelContext) private var context
@@ -20,68 +20,107 @@ struct IncomeModeCustomView: View {
     @State private var showCancelAlert = false
     @State private var showMissingFieldsAlert = false
     
+    struct CancelDoneButtonView<Content: View>: View {
+        let content: () -> Content
+        let action: () -> Void
+        
+        var body: some View {
+            Button(action: action) {
+                content()
+            }
+        }
+    }
+    
+    var headerSection: some View {
+        HStack {
+            CancelDoneButtonView(
+                content: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(.black)
+                },
+                action: {
+                    if !title.isEmpty || (Int(amount) ?? 0 <= 0) || !description.isEmpty {
+                        showCancelAlert = true
+                    } else {
+                        dismiss()
+                    }
+                }
+            )
+            Spacer()
+        }
+        .padding(25)
+    }
+    
+    var formSection: some View {
+        VStack(spacing: 12) {
+            CustomTextFieldForTitle(label: "Title", text: $title)
+            CustomTextFieldForAmount(label: "Amount", text: $amount)
+            CustomTextFieldForDesc(label: "Description", text: $description)
+        }
+        .padding(.horizontal, 30)
+        .padding(.top, 20)
+        .padding(.bottom, 32)
+    }
+    
+    
     var body: some View {
         VStack {
             ZStack {
-                Color(.systemGray6)
-                    .ignoresSafeArea()
-                
+                Color.white.ignoresSafeArea()
                 VStack {
                     ScrollView {
                         VStack {
+                            headerSection
+                            
                             HStack {
-                                CancelDoneButtonView(
-                                    text: "Cancel",
-                                    action: {
-                                        if !title.isEmpty || amount > 0 || !description.isEmpty {
-                                            showCancelAlert = true
-                                        } else {
-                                            dismiss()
-                                        }
-                                    }
-                                )
+                                Text("Add Income")
+                                    .font(.system(size: 30, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .padding(.leading, 25)
                                 Spacer()
-                                CancelDoneButtonView(
-                                    text: "Done",
-                                    action: {
-                                        if title.isEmpty || amount <= 0 {
-                                            showMissingFieldsAlert = true
-                                        } else {
-                                            let newTransaction = Transaction(
-                                                name: title,
-                                                date: selectedDate,
-                                                amount: amount,
-                                                type: .income,
-                                                count: 1,
-                                                desc: description
-                                            )
-                                            context.insert(newTransaction)
-                                            dismiss()
-                                        }
+                                DatePickerView(selectedDate: $selectedDate)
+                                    .padding(.trailing, 25)
+                            }
+                            .padding(.bottom, 32)
+                            
+                            ToggleView(isCustomMode: $isCustomMode)
+                            formSection
+                            
+                            CancelDoneButtonView(
+                                content: {
+                                    Text("Save")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .frame(width: 333, height: 45)
+                                        .background(Color.black)
+                                        .foregroundColor(.white)
+                                        .cornerRadius(8)
+                                },
+                                action: {
+                                    if title.isEmpty || (Int(amount) ?? 0) <= 0 {
+                                        showMissingFieldsAlert = true
+                                    } else {
+                                        let newTransaction = Transaction(
+                                            name: title,
+                                            date: selectedDate,
+                                            amount: Int(amount) ?? 0,
+                                            type: .income,
+                                            count: 1,
+                                            desc: description
+                                        )
+                                        context.insert(newTransaction)
+                                        dismiss()
                                     }
-                                )
-                            }
-                            .padding(20)
-                            
-                            IncomeExpenseButtonView(isIncomeMode: $isIncomeMode)
-                            
-                            VStack(spacing: 12) {
-                                CustomTextFieldForDate(label: "Date", selectedDate: $selectedDate)
-                                CustomTextFieldForString(label: "Title", text: $title)
-                                CustomTextFieldForInt(label: "Amount", text: $amount)
-                                CustomTextFieldForString(label: "Description", text: $description)
-                            }
-                            .padding()
+                                }
+                            )
                         }
                     }
                     Spacer()
-                    
-                    ToggleView(isCustomMode: $isCustomMode)
                 }
-//                .ignoresSafeArea(edges: .bottom)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white)
         .alert("Clear this entry?", isPresented: $showCancelAlert) {
             Button("Reset and Exit", role: .destructive) {
                 resetForm()
@@ -91,14 +130,11 @@ struct IncomeModeCustomView: View {
         } message: {
             Text("You have unsaved data. Are you sure you want to cancel?")
         }
-        .alert("Please fill in title and amount!", isPresented: $showMissingFieldsAlert) {
-            Button("OK", role: .cancel) {}
-        }
     }
     
     func resetForm() {
         title = ""
-        amount = 0
+        amount = ""
         description = ""
         selectedDate = Date()
     }

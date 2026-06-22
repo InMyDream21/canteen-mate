@@ -11,6 +11,7 @@ struct YearMonthPickerView: View {
         VStack {
             if isShowingPicker {
                 HStack {
+                    //Button
                     Button(action: {
                         selectedDate = Calendar.current.date(byAdding: .year, value: -1, to: selectedDate)!
                     }) {
@@ -49,14 +50,18 @@ struct YearMonthPickerView: View {
             } else {
                 Button(action: { isShowingPicker.toggle() }) {
                     HStack {
-                        Text("\(selectedDate.monthName()) \(String(selectedDate.year()))")
-                            .foregroundColor(.primary)
                         Image(systemName: "chevron.down")
                             .foregroundColor(.secondary)
+                        Text("\(selectedDate.monthName()) \(String(selectedDate.year()))")
+                            .foregroundColor(.primary)
                     }
-                    .padding(7)
-                    .frame(minWidth: 120)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemGray5)))
+                    .padding(14)
+                    .frame(height: 26)
+                    .background(Color.white)
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.black, lineWidth: 1)
+                        )
                 }
             }
         }

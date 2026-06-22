@@ -1,63 +1,46 @@
-//
-//  DatePicker.swift
-//  CanteenMate
-//
-//  Created by Chairal Octavyanz on 03/04/25.
-//
-
-import Foundation
-
 import SwiftUI
 
 struct DatePickerView: View {
     @Binding var selectedDate: Date
     @State private var showDatePicker = false
-    
+
     var body: some View {
-        HStack{
-            Button(action: { changeDate(by: -1) }) {
-                Text("<").font(.title2).padding()
+        VStack(spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: "calendar")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 14, height: 14)
+                    .foregroundColor(.black)
+
+                Text(formattedDate(selectedDate))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.black)
             }
-            
-            Spacer()
-            
-            Text(formattedDate(selectedDate))
-                .font(.title3)
-                .padding()
-                .onTapGesture { showDatePicker.toggle() }
-            
-            Spacer()
-            
-            Button(action: { changeDate(by: 1) }) {
-                Text(">").font(.title2).padding()
+            .frame(width: 124, height: 28)
+            .background(Color.gray.opacity(0.3))
+            .clipShape(Capsule())
+            .onTapGesture {
+                withAnimation {
+                    showDatePicker.toggle()
+                }
+            }
+
+            if showDatePicker {
+                DatePicker("", selection: $selectedDate, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+                    .padding(.top, 4)
             }
         }
-        .frame(height: 45)
-        .background(Color.gray.opacity(0.3))
-        
-        if showDatePicker {
-            DatePicker("", selection: $selectedDate, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
-                .padding()
-        }
-        
     }
-    
-    // Helper function to format date
+
+    // Format tanggal seperti "18 March 2025"
     func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd MMMM yyyy"
         return formatter.string(from: date)
     }
-    
-    // Function to change date
-    func changeDate(by days: Int) {
-        if let newDate = Calendar.current.date(byAdding: .day, value: days, to: selectedDate) {
-            selectedDate = newDate
-        }
-    }
-    
 }
 
 #Preview {

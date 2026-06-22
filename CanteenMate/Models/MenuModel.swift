@@ -8,16 +8,19 @@
 import Foundation
 import SwiftData
 
-
 @Model
 class MenuModel: Identifiable {
-    var id = UUID()
+    var id: UUID
     var name: String
     var price: Int
+    var category: String
     
-    init(id: UUID = UUID(), name: String, price: Int) {
-        self.id = id
+    init(name: String, price: Int, category: String) {
+        self.id = UUID()
         self.name = name
         self.price = price
+        self.category = category
     }
 }
+
+

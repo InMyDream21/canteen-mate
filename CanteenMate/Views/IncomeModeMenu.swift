@@ -13,10 +13,10 @@ struct IncomeModeMenuView: View {
     @Binding var isCustomMode: Bool
     @Binding var isIncomeMode: Bool
     @State private var selectedDate: Date = Date()
-
+    
     @Environment(\.modelContext) private var context
     @Query private var menuModels: [MenuModel]
-
+    
     @State private var itemQuantities: [UUID: Int] = [:]
     
     var totalPrice: Int {
@@ -26,50 +26,58 @@ struct IncomeModeMenuView: View {
         }
     }
     
+    struct CancelDoneButtonView<Content: View>: View {
+        let content: () -> Content
+        let action: () -> Void
+        
+        var body: some View {
+            Button(action: action) {
+                content()
+            }
+        }
+    }
+    
+    
     var body: some View {
         VStack {
             ZStack {
-                Color(.systemGray6).ignoresSafeArea()
+                Color.white.ignoresSafeArea()
                 VStack {
                     ScrollView {
                         VStack {
                             HStack {
                                 CancelDoneButtonView(
-                                    text: "Cancel",
+                                    content: {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 30, weight: .bold))
+                                            .foregroundColor(.black)
+                                    },
                                     action: {
                                         dismiss()
                                     }
                                 )
+                                
                                 Spacer()
-                                CancelDoneButtonView(
-                                    text: "Done",
-                                    action: {
-                                        print("Income from menu saved:")
-                                        for item in menuModels {
-                                            let qty = itemQuantities[item.id] ?? 0
-                                            if qty > 0 {
-                                                let newTransaction = Transaction(
-                                                                    name: item.name,
-                                                                    date: selectedDate,
-                                                                    amount: item.price * qty,
-                                                                    type: .income,
-                                                                    count: qty
-                                                                )
-                                                context.insert(newTransaction)
-                                                print("- \(item.name): \(qty) x \(Int(item.price))")
-                                            }
-                                        }
-                                        print("Total: \(totalPrice)")
-                                        dismiss()
-                                    }
-                                )
                             }
-                            .padding(20)
-
-                            IncomeExpenseButtonView(isIncomeMode: $isIncomeMode)
-
-                            DatePickerView(selectedDate: $selectedDate)
-
+                            .padding(25)
+                            
+                            HStack{
+                                Text("Add Income")
+                                    .font(.system(size: 30, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .padding(.leading, 25)
+                                Spacer()
+                                
+                                DatePickerView(selectedDate: $selectedDate)
+                                    .padding(.trailing, 25)
+                            }
+                            .padding(.bottom, 32)
+                            
+                            ToggleView(isCustomMode: $isCustomMode)
+                                .padding(.bottom, 20)
+                            
+                            //                            IncomeExpenseButtonView(isIncomeMode: $isIncomeMode)
+                            
                             ForEach(menuModels) { item in
                                 MenuCashierCard(
                                     title: item.name,
@@ -80,32 +88,75 @@ struct IncomeModeMenuView: View {
                                     )
                                 )
                             }
-
+                            
                             Spacer()
                         }
                     }
-
-                    HStack {
-                        Text("Total: ")
-                            .font(.body)
-                            .foregroundColor(.white)
-
-                        Spacer()
-
-                        Text("\(totalPrice.formattedWithSeparator())")
-                            .font(.body)
-                            .bold()
-                            .foregroundColor(.white)
+                    .overlay {
+                        if menuModels.isEmpty {
+                            ContentUnavailableView(label: {
+                                Label("No Menu", systemImage: "list.bullet.rectangle.portrait")
+                            }, description: {
+                                Text("Start adding menus to see your list.")
+                            })
+                            .offset(y: 80)
+                        }
                     }
-                    .padding()
-                    .background(Color(.darkGray))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-
-                    ToggleView(isCustomMode: $isCustomMode)
+                    
+                    //total box
+                    VStack {
+                        HStack {
+                            Text("Total: ")
+                                .font(.system(size: 18, weight: .regular))
+                                .foregroundColor(.black)
+                            
+                            Spacer()
+                            
+                            Text("\(totalPrice.formattedWithSeparator())")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                        .padding(.horizontal, 40)
+                        .padding(.top, 14)
+                        .padding(.bottom, 10)
+                        
+                        CancelDoneButtonView(
+                            content: {
+                                Text("Save")
+                                    .font(.system(size: 16, weight: .medium)) // Ukuran dan berat font
+                                    .frame(width: 333, height: 45)
+                                    .background(Color.black)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                            },
+                            action: {
+                                print("Income from menu saved:")
+                                for item in menuModels {
+                                    let qty = itemQuantities[item.id] ?? 0
+                                    if qty > 0 {
+                                        let newTransaction = Transaction(
+                                            name: item.name,
+                                            date: selectedDate,
+                                            amount: item.price * qty,
+                                            type: .income,
+                                            count: qty
+                                        )
+                                        context.insert(newTransaction)
+                                        print("- \(item.name): \(qty) x \(Int(item.price))")
+                                    }
+                                }
+                                print("Total: \(totalPrice)")
+                                dismiss()
+                            }
+                        )
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: 140)
+                    .background(Color(hex: "#F4F4F4"))
+                    
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
         }
         .onAppear {
             for item in menuModels {

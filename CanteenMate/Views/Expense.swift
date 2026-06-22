@@ -13,7 +13,7 @@ struct ExpenseView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var isIncomeMode: Bool
     @State private var date = Date()
-    @State private var amount: Int = 0
+    @State private var amount: String = ""
     @State private var title: String = ""
     @State private var description: String = ""
     @Environment(\.modelContext) private var context
@@ -21,17 +21,31 @@ struct ExpenseView: View {
     @State private var showCancelAlert = false
     @State private var showMissingFieldsAlert = false
     
+    struct CancelDoneButtonView<Content: View>: View {
+        let content: () -> Content
+        let action: () -> Void
+        
+        var body: some View {
+            Button(action: action) {
+                content()
+            }
+        }
+    }
+    
     var body: some View {
         ZStack {
-            Color(.systemGray6)
-                .ignoresSafeArea()
+            Color.white.ignoresSafeArea()
             
             VStack {
                 HStack {
                     CancelDoneButtonView(
-                        text: "Cancel",
+                        content: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 30, weight: .bold))
+                                .foregroundColor(.black)
+                        },
                         action: {
-                            if !title.isEmpty || amount > 0 || !description.isEmpty {
+                            if !title.isEmpty || (Int(amount) ?? 0) > 0 || !description.isEmpty {
                                 showCancelAlert = true
                             } else {
                                 dismiss()
@@ -39,37 +53,61 @@ struct ExpenseView: View {
                         }
                     )
                     Spacer()
-                    CancelDoneButtonView(
-                        text: "Done",
-                        action: {
-                            if title.isEmpty || amount <= 0 {
-                                showMissingFieldsAlert = true
-                            } else {
-                                let newTransaction = Transaction(
-                                                    name: title,
-                                                    date: date,
-                                                    amount: amount,
-                                                    type: .expense,
-                                                    count: 1,
-                                                    desc: description
-                                                )
-                                context.insert(newTransaction)
-                                dismiss()
-                            }
-                        }
-                    )
                 }
                 .padding(20)
                 
-                IncomeExpenseButtonView(isIncomeMode: $isIncomeMode)
+                //                IncomeExpenseButtonView(isIncomeMode: $isIncomeMode)
+                
+                HStack{
+                    Text("Add Expense")
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(.black)
+                        .padding(.leading, 25)
+                    Spacer()
+                    
+                    DatePickerView(selectedDate: $date)
+                        .padding(.trailing, 25)
+                }
+                .padding(.bottom, 40)
+                
                 
                 VStack(spacing: 12) {
-                    CustomTextFieldForDate(label: "Date", selectedDate: $date)
-                    CustomTextFieldForString(label: "Title", text: $title)
-                    CustomTextFieldForInt(label: "Amount", text: $amount)
-                    CustomTextFieldForString(label: "Description", text: $description)
+                    //                    CustomTextFieldForDate(label: "Date", selectedDate: $date)
+                    CustomTextFieldForTitle(label: "Title", text: $title)
+                    CustomTextFieldForAmount(label: "Amount", text: $amount)
+                    CustomTextFieldForDesc(label: "Description", text: $description)
                 }
-                .padding()
+                .padding(.horizontal, 30)
+                .padding(.top, 20)
+                .padding(.bottom, 32)
+                
+                CancelDoneButtonView(
+                    content: {
+                        Text("Save")
+                            .font(.system(size: 16, weight: .medium)) // Ukuran dan berat font
+                            .frame(width: 333, height: 45)
+                            .background(Color.black)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
+                    },
+                    action: {
+                        if title.isEmpty || (Int(amount) ?? 0) <= 0 {
+                            showMissingFieldsAlert = true
+                        } else {
+                            let newTransaction = Transaction(
+                                name: title,
+                                date: date,
+                                amount: Int(amount) ?? 0,
+                                type: .expense,
+                                count: 1,
+                                desc: description
+                            )
+                            context.insert(newTransaction)
+                            dismiss()
+                        }
+                    }
+                )
+                
                 Spacer()
             }
         }
@@ -89,7 +127,7 @@ struct ExpenseView: View {
     
     func resetForm() {
         title = ""
-        amount = 0
+        amount = ""
         description = ""
         date = Date()
     }

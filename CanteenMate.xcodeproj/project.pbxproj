@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A5CBCB6E2DDA56A20070C1F5 /* Poppins-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A5CBCB6D2DDA56A20070C1F5 /* Poppins-Regular.ttf */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		34685B272D93F73C0022B4C2 /* CanteenMate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CanteenMate.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5CBCB6D2DDA56A20070C1F5 /* Poppins-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Poppins-Regular.ttf"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +37,7 @@
 		34685B1E2D93F73C0022B4C2 = {
 			isa = PBXGroup;
 			children = (
+				A5CBCB6D2DDA56A20070C1F5 /* Poppins-Regular.ttf */,
 				34685B292D93F73C0022B4C2 /* CanteenMate */,
 				34685B282D93F73C0022B4C2 /* Products */,
 			);
@@ -109,6 +115,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A5CBCB6E2DDA56A20070C1F5 /* Poppins-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -252,7 +259,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"CanteenMate/Preview Content\"";
-				DEVELOPMENT_TEAM = QD8ZHL46RD;
+				DEVELOPMENT_TEAM = YAAQ5S7RQL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -281,7 +288,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"CanteenMate/Preview Content\"";
-				DEVELOPMENT_TEAM = QD8ZHL46RD;
+				DEVELOPMENT_TEAM = YAAQ5S7RQL;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -294,7 +301,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kapallawd.CanteenMate;
+				PRODUCT_BUNDLE_IDENTIFIER = com.budionosiregar;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

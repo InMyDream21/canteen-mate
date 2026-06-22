@@ -1,31 +1,26 @@
 import SwiftUI
 
+enum SummaryType {
+    case income
+    case expense
+    case net
+}
+
 struct SummaryCard: View {
-    let title: String
     let amount: Int
-    let color: Color
-    let imageName: String
+    let type: SummaryType
+    let fontSize: CGFloat
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) { 
-            HStack(spacing: 4) {
-                Image(systemName: imageName)
-                Text(title)
-                    .font(.headline)
-                    .bold()
-            }
-            Text("Rp\(formattedAmount)")
-                .font(.title)
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(sign)Rp\(formattedAmount)")
+                .font(.system(size: fontSize, weight: .bold))
+                .foregroundColor(textColor)
                 .bold()
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .allowsTightening(true)
         }
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(color)
-        .foregroundColor(.white)
-        .cornerRadius(12)
     }
 
     var formattedAmount: String {
@@ -34,13 +29,35 @@ struct SummaryCard: View {
         formatter.groupingSeparator = "."
         return formatter.string(from: NSNumber(value: abs(amount))) ?? "\(abs(amount))"
     }
+
+    var sign: String {
+        switch type {
+        case .income:
+            return "+"
+        case .expense:
+            return "-"
+        case .net:
+            return amount >= 0 ? "+" : "-"
+        }
+    }
+
+    var textColor: Color {
+        switch type {
+        case .income:
+            return Color(hex: "#47AF56")
+        case .expense:
+            return Color(hex: "#A5270F")
+        case .net:
+            return .black
+        }
+    }
 }
 
 #Preview {
-    SummaryCard(
-        title: "Testing",
-        amount: 100000,
-        color: Color.red,
-        imageName: "chart.line.uptrend.xyaxis"
-    )
+    VStack(spacing: 16) {
+        SummaryCard(amount: 25102002, type: .income, fontSize: 16)
+        SummaryCard(amount: 830000, type: .expense, fontSize: 12)
+        SummaryCard(amount: 25102002 - 830000, type: .net, fontSize: 12)
+    }
+    .padding()
 }

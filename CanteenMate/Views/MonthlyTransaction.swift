@@ -17,6 +17,7 @@ struct MonthlyTransaction: View {
     }
     
     @Query private var transactions: [Transaction]
+    
     init(selectedDate: Date, isEmpty: Binding<Bool>) {
         self._isEmpty = isEmpty
         self.selectedDate = selectedDate
@@ -34,116 +35,212 @@ struct MonthlyTransaction: View {
         }, sort: [SortDescriptor(\.date)])
     }
     
-    var groupedTransactions: [(String, Int)] {
-        let grouped = Dictionary(grouping: transactions, by: { transaction in
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "dd MMM"
-            return dateFormatter.string(from: transaction.date)
-        }).mapValues { transactions in
-            transactions.reduce(0) {
-                $0 + ($1.type == .income ? $1.amount : -$1.amount)
-            }
+    private var groupedByDate: [(Date, [Transaction])] {
+        let grouped = Dictionary(grouping: transactions) { tx in
+            calendar.startOfDay(for: tx.date)
         }
-        
-        return grouped.sorted(by: { $0.0 < $1.0 })
+        return grouped.sorted(by: { $0.key > $1.key })
     }
     
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d MMM yyyy"
+        return formatter
+    }
+    
+    private func groupedListSection() -> some View {
+        List {
+            ForEach(groupedByDate, id: \.0) { date, items in
+                let incomeItems = items.filter { $0.type == .income }
+                let expenseItems = items.filter { $0.type == .expense }
+                let totalIncome = incomeItems.map { $0.amount }.reduce(0, +)
+                let totalExpense = expenseItems.map { $0.amount }.reduce(0, +)
+                let total = totalIncome - totalExpense
+
+                Section(
+                    header:
+                        VStack(spacing: 4) {
+                            HStack {
+                                Text(dateFormatter.string(from: date))
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.black)
+
+                                Spacer()
+
+                                Text("\(abs(total).formattedWithSeparator())")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.gray)
+                            }
+
+                            Rectangle()
+                                .frame(height: 1)
+                                .foregroundColor(.black)
+                        }
+                ) {
+                    // Income Row (selalu tampil)
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.down.left")
+                            .font(.system(size: 25, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 35, height: 35)
+                            .background(Color(hex: "#47AF56"))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                        Text("Income")
+                            .font(.system(size: 16, weight: .medium))
+
+                        Spacer()
+
+                        Text("\(totalIncome.formattedWithSeparator())")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.black)
+                    }
+                    .listRowSeparator(.hidden)
+
+                    // Expense Row (selalu tampil)
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 25, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 35, height: 35)
+                            .background(Color(hex: "#A5270F"))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                        Text("Expense")
+                            .font(.system(size: 16, weight: .medium))
+
+                        Spacer()
+
+                        Text("\(totalExpense.formattedWithSeparator())")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.black)
+                    }
+                    
+                    .listRowSeparator(.hidden)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .listStyle(.plain)
+    }
+
+
     var body: some View {
-        ZStack{
+        ZStack {
             VStack(alignment: .leading) {
                 if !isEmpty {
-                    let totalIncome = groupedTransactions
-                        .map { $0.1 }
-                        .filter { $0 > 0 }
-                        .reduce(0, +)
-
-                    let totalExpense = groupedTransactions
-                        .map { $0.1 }
-                        .filter { $0 < 0 }
+                    let totalIncome = transactions
+                        .filter { $0.type == .income }
+                        .map { $0.amount }
                         .reduce(0, +)
                     
-                    HStack(spacing: 16) {
-                        SummaryCard(
-                            title: "Income",
-                            amount: totalIncome,
-                            color: .green,
-                            imageName: "chart.line.uptrend.xyaxis"
-                        )
-                        SummaryCard(
-                            title: "Expenses",
-                            amount: abs(totalExpense),
-                            color: .red,
-                            imageName: "chart.line.downtrend.xyaxis"
-                        )
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 8)
-                    .zIndex(1)
+                    let totalExpense = transactions
+                        .filter { $0.type == .expense }
+                        .map { $0.amount }
+                        .reduce(0, +)
                     
-                    List(groupedTransactions, id: \.0) { date, total in
-                        HStack {
-                            Text(date)
-                                .frame(width: 80, alignment: .leading)
-                            Spacer()
-                            Text("Rp\(abs(total))")
-                                .bold()
-                                .frame(width: 100, alignment: .trailing)
-                                .foregroundColor(total < 0 ? .red : .green)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.5)
-                                .allowsTightening(true)
+                    let netAmount = totalIncome - totalExpense
+                    
+                    HStack {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Text("Net Total")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
+                            
+                            SummaryCard(amount: netAmount, type: .net, fontSize: 36)
+                            
+                            HStack(spacing: 12) {
+                                SummaryCard(amount: totalIncome, type: .income, fontSize: 20)
+                                
+                                Divider()
+                                    .frame(width: 1, height: 20)
+                                    .background(Color.gray)
+                                
+                                SummaryCard(amount: totalExpense, type: .expense, fontSize: 20)
+                            }
                         }
-                        .padding(.leading, 8)
+                        Spacer()
                     }
-                    .padding(.top, -30)
+                    
+                    groupedListSection()
+                    .onAppear {
+                        isEmpty = groupedByDate.isEmpty
+                    }
+                    .onChange(of: groupedByDate.count) { _, _ in
+                        isEmpty = groupedByDate.isEmpty
+                    }
+                    .onChange(of: selectedDate) {
+                        isEmpty = groupedByDate.isEmpty
+                    }
                 }
             }
         }
         .background(
             Color(UIColor { trait in
-                trait.userInterfaceStyle == .dark ? .black : .systemGray6
+                trait.userInterfaceStyle == .dark ? .black : .white
             })
         )
-
-        .onAppear {
-            isEmpty = groupedTransactions.isEmpty
-        }
-        .onChange(of: groupedTransactions.count, { _, _ in
-            isEmpty = groupedTransactions.isEmpty
-        })
-        .onChange(of: selectedDate) {
-            isEmpty = groupedTransactions.isEmpty
-        }
     }
 }
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let modelContainer = try! ModelContainer(for: Transaction.self, configurations: config)
-    
     let context = modelContainer.mainContext
     let calendar = Calendar.current
     let now = Date()
 
-    let sampleDates = [
-        now,
-        calendar.date(byAdding: .day, value: -1, to: now)!,
-        calendar.date(byAdding: .day, value: -2, to: now)!,
-        calendar.date(byAdding: .day, value: -7, to: now)!,
-        calendar.date(byAdding: .day, value: -14, to: now)!
-    ]
+    let sameDay = now
+    let otherDay = calendar.date(byAdding: .day, value: -1, to: now)!
 
-    let dummyData = [
-        Transaction(name: "Salary", date: sampleDates[0], amount: 5000000, type: .income, count: 1),
-        Transaction(name: "Lunch", date: sampleDates[1], amount: 25000, type: .expense, count: 1),
-        Transaction(name: "Internet", date: sampleDates[2], amount: 150000, type: .expense, count: 1),
-        Transaction(name: "Internet", date: sampleDates[2], amount: 150000, type: .expense, count: 1),
-        Transaction(name: "Side Job", date: sampleDates[3], amount: 1000000, type: .income, count: 1),
-        Transaction(name: "Groceries", date: sampleDates[4], amount: 200000, type: .expense, count: 1),
+    // Transaksi untuk hari yang sama dengan income dan expense
+    let dummyData: [Transaction] = [
+        Transaction(name: "Freelance Project", date: sameDay, amount: 300000, type: .income, count: 1),
+        Transaction(name: "Client Lunch", date: sameDay, amount: 50000, type: .expense, count: 1),
+
+        // Transaksi tambahan untuk variasi
+        Transaction(name: "Side Hustle", date: otherDay, amount: 200000, type: .income, count: 1),
+        Transaction(name: "Internet Bill", date: otherDay, amount: 100000, type: .expense, count: 1)
     ]
 
     dummyData.forEach { context.insert($0) }
 
-    return MonthlyTransaction(selectedDate: now, isEmpty: .constant(false))
-        .modelContainer(modelContainer)
+    return MonthlyTransaction(
+        selectedDate: now,
+        isEmpty: .constant(false)
+    )
+    .modelContainer(modelContainer)
 }
+
+
+//#Preview {
+//    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+//    let modelContainer = try! ModelContainer(for: Transaction.self, configurations: config)
+//    
+//    let context = modelContainer.mainContext
+//    let calendar = Calendar.current
+//    let now = Date()
+//    
+//    let sampleDates = [
+//        now,
+//        calendar.date(byAdding: .day, value: -1, to: now)!,
+//        calendar.date(byAdding: .day, value: -2, to: now)!,
+//        calendar.date(byAdding: .day, value: -7, to: now)!,
+//        calendar.date(byAdding: .day, value: -14, to: now)!
+//    ]
+//    
+//    let dummyData = [
+//        Transaction(name: "Salary", date: sampleDates[0], amount: 5000000, type: .income, count: 1),
+//        Transaction(name: "Lunch", date: sampleDates[1], amount: 25000, type: .expense, count: 1),
+//        Transaction(name: "Internet", date: sampleDates[2], amount: 150000, type: .expense, count: 1),
+//        Transaction(name: "Internet", date: sampleDates[2], amount: 150000, type: .expense, count: 1),
+//        Transaction(name: "Side Job", date: sampleDates[3], amount: 1000000, type: .income, count: 1),
+//        Transaction(name: "Groceries", date: sampleDates[4], amount: 200000, type: .expense, count: 1),
+//    ]
+//    
+//    dummyData.forEach { context.insert($0) }
+//    
+//    return MonthlyTransaction(selectedDate: now, isEmpty: .constant(false))
+//        .modelContainer(modelContainer)
+//}

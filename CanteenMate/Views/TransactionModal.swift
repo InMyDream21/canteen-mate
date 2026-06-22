@@ -25,7 +25,7 @@ struct TransactionModal: View {
                 }
             }
         }
-        .background(Color(.systemGray6))
+        .background(Color(.white))
 //        .ignoresSafeArea(.container, edges: .bottom)
     }
 }
@@ -33,3 +33,5 @@ struct TransactionModal: View {
 #Preview {
     TransactionModal()
 }
+
+//Gak Kepake
